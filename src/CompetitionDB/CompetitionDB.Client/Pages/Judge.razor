@@ -1,0 +1,138 @@
+﻿@page "/judge"
+@using CompetitionDB.Client.Models
+
+<PageTitle>Competition - Judgement</PageTitle>
+
+<h3>🧑‍⚖️ Judge the competition 🗒️</h3>
+
+<p>
+    ℹ️ Set some score on the score card. 
+    You can maximum set @(contestants.Count/3 /* number of contestants divided by 3  */) Yes votes, 
+    and then you have to set Alt 1, Alt 2 or Alt 3.
+</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Contestant</th>
+            <th class="success">YES</th>
+            <th class="danger">NO</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (int i = 0; i < contestants.Count; i++)
+        {
+            var comp = contestants[i];
+
+            <tr>
+                <td>@($"{comp.Id} {comp.Name}")</td>
+                <td>
+                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.No)" id="@($"Vote-No-{i}")" class="btn @buttonNoClasses[i]">👎 NO</button>
+                </td>
+                <td>
+                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Yes)" id="@($"Vote-Yes-{i}")" class="btn @buttonYesClasses[i]">YES 👍</button>
+                </td>
+                <td>
+                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Alt1)" id="@($"Vote-alt1-{i}")" class="btn @buttonAlt1Classes[i]">ALT 1</button>
+                </td>
+                <td>
+                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Alt2)" id="@($"Vote-alt2-{i}")" class="btn @buttonAlt2Classes[i]">ALT 2</button>
+                </td>
+                <td>
+                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Alt3)" id="@($"Vote-alt3-{i}")" class="btn @buttonAlt3Classes[i]">ALT 3</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private Dictionary<int, string> buttonNoClasses = new Dictionary<int, string>();
+    private Dictionary<int, string> buttonYesClasses = new Dictionary<int, string>();
+    private Dictionary<int, string> buttonAlt1Classes = new Dictionary<int, string>();
+    private Dictionary<int, string> buttonAlt2Classes = new Dictionary<int, string>();
+    private Dictionary<int, string> buttonAlt3Classes = new Dictionary<int, string>();
+
+
+
+    //Make a list of Contestants and their votes
+    private List<Contestant> contestants = new List<Contestant>();
+
+    enum Vote
+    {
+        No,   //0
+        Alt1, //1
+        Alt2, //2
+        Alt3, //3
+        Yes   //4
+    }
+
+    protected override void OnInitialized()
+    {
+        var comps = new List<Contestant>(){
+            new Contestant { Id = 10, Name = "Jonas", Scored = -1 },
+            new Contestant { Id = 24, Name = "Sara", Scored = -1 },
+            new Contestant { Id = 27, Name = "Elin", Scored = -1 },
+            new Contestant { Id = 32, Name = "Helena", Scored = -1 }
+        };
+
+        contestants.AddRange(comps);
+
+
+        for (int i = 0; i < contestants.Count; i++)
+        {
+            buttonNoClasses[i] = "btn-secondary";
+            buttonYesClasses[i] = "btn-secondary";
+            buttonAlt1Classes[i] = "btn-secondary";
+            buttonAlt2Classes[i] = "btn-secondary";
+            buttonAlt3Classes[i] = "btn-secondary";
+        }
+    }
+
+
+    private void VoteYesNoMaybe(int contestantId, Vote judgeVoted)
+    {
+        //Find the index of the contestant
+        var index = contestants.FindIndex(c => c.Id == contestantId);
+
+        ClearVotesForIndex(contestantId);
+
+        //Change color on button and set the vote score
+        if (judgeVoted.Equals(Vote.No))
+        {
+            buttonNoClasses[index] = "btn-danger";
+            contestants[index].Scored = 0;
+        }
+        else if (judgeVoted.Equals(Vote.Alt1))
+        {
+            buttonAlt1Classes[index] = "btn-warning";
+            contestants[index].Scored = 4.5;
+        }
+        else if (judgeVoted.Equals(Vote.Alt2))
+        {
+            buttonAlt2Classes[index] = "btn-warning";
+            contestants[index].Scored = 4.3;
+        }
+        else if (judgeVoted.Equals(Vote.Alt3))
+        {
+            buttonAlt3Classes[index] = "btn-warning";
+            contestants[index].Scored = 4.2;
+        }
+        else if (judgeVoted.Equals(Vote.Yes))
+        {
+            buttonYesClasses[index] = "btn-success";
+            contestants[index].Scored = 10;
+        }
+    }
+
+    private void ClearVotesForIndex(int contestantId)
+    {
+        //Find the index of the contestant
+        var i = contestants.FindIndex(c => c.Id == contestantId);
+        buttonNoClasses[i] = "btn-secondary";
+        buttonYesClasses[i] = "btn-secondary";
+        buttonAlt1Classes[i] = "btn-secondary";
+        buttonAlt2Classes[i] = "btn-secondary";
+        buttonAlt3Classes[i] = "btn-secondary";
+    }
+}
