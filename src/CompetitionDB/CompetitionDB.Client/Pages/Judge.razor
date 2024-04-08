@@ -15,8 +15,11 @@
     <thead>
         <tr>
             <th>Contestant</th>
-            <th class="success">YES</th>
-            <th class="danger">NO</th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -27,10 +30,10 @@
             <tr>
                 <td>@($"{comp.Id} {comp.Name}")</td>
                 <td>
-                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.No)" id="@($"Vote-No-{i}")" class="btn @buttonNoClasses[i]">👎 NO</button>
+                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.No)" id="@($"Vote-No-{i}")" class="btn @buttonNoClasses[i]">@(buttonNoText[i] ?? "NO")</button>
                 </td>
                 <td>
-                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Yes)" id="@($"Vote-Yes-{i}")" class="btn @buttonYesClasses[i]">YES 👍</button>
+                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Yes)" id="@($"Vote-Yes-{i}")" class="btn @buttonYesClasses[i]">@(buttonYesText[i] ?? "YES")</button>
                 </td>
                 <td>
                     <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Alt1)" id="@($"Vote-alt1-{i}")" class="btn @buttonAlt1Classes[i]">ALT 1</button>
@@ -53,7 +56,8 @@
     private Dictionary<int, string> buttonAlt2Classes = new Dictionary<int, string>();
     private Dictionary<int, string> buttonAlt3Classes = new Dictionary<int, string>();
 
-
+    private Dictionary<int, string> buttonNoText = new Dictionary<int, string>();
+    private Dictionary<int, string> buttonYesText = new Dictionary<int, string>();
 
     //Make a list of Contestants and their votes
     private List<Contestant> contestants = new List<Contestant>();
@@ -67,7 +71,7 @@
         Yes   //4
     }
 
-    protected override void OnInitialized()
+    protected override async void OnInitialized()
     {
         var comps = new List<Contestant>(){
             new Contestant { Id = 10, Name = "Jonas", Scored = -1 },
@@ -81,11 +85,7 @@
 
         for (int i = 0; i < contestants.Count; i++)
         {
-            buttonNoClasses[i] = "btn-secondary";
-            buttonYesClasses[i] = "btn-secondary";
-            buttonAlt1Classes[i] = "btn-secondary";
-            buttonAlt2Classes[i] = "btn-secondary";
-            buttonAlt3Classes[i] = "btn-secondary";
+            ClearVotesForIndex(contestants[i].Id);
         }
     }
 
@@ -100,6 +100,7 @@
         //Change color on button and set the vote score
         if (judgeVoted.Equals(Vote.No))
         {
+            buttonNoText[index] = "👎 NO";
             buttonNoClasses[index] = "btn-danger";
             contestants[index].Scored = 0;
         }
@@ -120,6 +121,7 @@
         }
         else if (judgeVoted.Equals(Vote.Yes))
         {
+            buttonYesText[index] = "YES 👍";
             buttonYesClasses[index] = "btn-success";
             contestants[index].Scored = 10;
         }
@@ -134,5 +136,8 @@
         buttonAlt1Classes[i] = "btn-secondary";
         buttonAlt2Classes[i] = "btn-secondary";
         buttonAlt3Classes[i] = "btn-secondary";
+
+        buttonNoText[i] = "NO";
+        buttonYesText[i] = "YES";
     }
 }
