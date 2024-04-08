@@ -4,13 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>CompetitionDB</RootNamespace>
-    <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src.ServiceDefaults\src.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\Competition-db.Client\CompetitionDB.Client.csproj" />
+    <ProjectReference Include="..\..\CompetitionDB.ServiceDefaults\CompetitionDB.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\CompetitionDB.Client\CompetitionDB.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.2" />
   </ItemGroup>
 
