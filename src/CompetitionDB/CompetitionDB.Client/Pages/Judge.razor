@@ -30,22 +30,32 @@
             <tr>
                 <td>@($"{comp.Id} {comp.Name}")</td>
                 <td>
-                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.No)" id="@($"Vote-No-{i}")" class="btn @buttonNoClasses[i]">@(buttonNoText[i] ?? "NO")</button>
+                    <button @onclick="() => VoteYesMaybeNo(comp.Id, Vote.Yes)" id="@($"Vote-Yes-{i}")" class="btn @buttonYesClasses[i]">@(buttonYesText[i] ?? "YES")</button>
                 </td>
                 <td>
-                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Yes)" id="@($"Vote-Yes-{i}")" class="btn @buttonYesClasses[i]">@(buttonYesText[i] ?? "YES")</button>
+                    <button @onclick="() => VoteYesMaybeNo(comp.Id, Vote.Alt1)" id="@($"Vote-alt1-{i}")" class="btn @buttonAlt1Classes[i]">ALT 1</button>
                 </td>
                 <td>
-                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Alt1)" id="@($"Vote-alt1-{i}")" class="btn @buttonAlt1Classes[i]">ALT 1</button>
+                    <button @onclick="() => VoteYesMaybeNo(comp.Id, Vote.Alt2)" id="@($"Vote-alt2-{i}")" class="btn @buttonAlt2Classes[i]">ALT 2</button>
                 </td>
                 <td>
-                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Alt2)" id="@($"Vote-alt2-{i}")" class="btn @buttonAlt2Classes[i]">ALT 2</button>
+                    <button @onclick="() => VoteYesMaybeNo(comp.Id, Vote.Alt3)" id="@($"Vote-alt3-{i}")" class="btn @buttonAlt3Classes[i]">ALT 3</button>
                 </td>
                 <td>
-                    <button @onclick="() => VoteYesNoMaybe(comp.Id, Vote.Alt3)" id="@($"Vote-alt3-{i}")" class="btn @buttonAlt3Classes[i]">ALT 3</button>
+                    <button @onclick="() => VoteYesMaybeNo(comp.Id, Vote.No)" id="@($"Vote-No-{i}")" class="btn @buttonNoClasses[i]">@(buttonNoText[i] ?? "NO")</button>
                 </td>
             </tr>
         }
+        <tr>
+            <td>
+                <button class="btn btn-primary">Save Votes</button>
+            </td>
+            <td>@contestants.Count(a => a.Scored == 10) of @(contestants.Count / 3)</td>
+            <td>@contestants.Count(a => a.Scored == 4.5) of 1</td>
+            <td>@contestants.Count(a => a.Scored == 4.3) of 1</td>
+            <td>@contestants.Count(a => a.Scored == 4.2) of 1</td>
+            <td>@contestants.Count(a => a.Scored == 0) of @(contestants.Count() - (contestants.Count / 3) - 3)</td>
+        </tr>
     </tbody>
 </table>
 
@@ -90,7 +100,7 @@
     }
 
 
-    private void VoteYesNoMaybe(int contestantId, Vote judgeVoted)
+    private void VoteYesMaybeNo(int contestantId, Vote judgeVoted)
     {
         //Find the index of the contestant
         var index = contestants.FindIndex(c => c.Id == contestantId);
@@ -98,11 +108,11 @@
         ClearVotesForIndex(contestantId);
 
         //Change color on button and set the vote score
-        if (judgeVoted.Equals(Vote.No))
+        if (judgeVoted.Equals(Vote.Yes))
         {
-            buttonNoText[index] = "👎 NO";
-            buttonNoClasses[index] = "btn-danger";
-            contestants[index].Scored = 0;
+            buttonYesText[index] = "👍 YES";
+            buttonYesClasses[index] = "btn-success";
+            contestants[index].Scored = 10;
         }
         else if (judgeVoted.Equals(Vote.Alt1))
         {
@@ -119,13 +129,30 @@
             buttonAlt3Classes[index] = "btn-warning";
             contestants[index].Scored = 4.2;
         }
-        else if (judgeVoted.Equals(Vote.Yes))
+        else
         {
-            buttonYesText[index] = "YES 👍";
-            buttonYesClasses[index] = "btn-success";
-            contestants[index].Scored = 10;
+            buttonNoText[index] = "NO 👎";
+            buttonNoClasses[index] = "btn-danger";
+            contestants[index].Scored = 0;
         }
+
+        Console.WriteLine($"Contestant {contestantId} voted {judgeVoted}");
+        Console.WriteLine($"Contestant {contestantId} scored {contestants[index].Scored}");
+
+        //SaveVotes();
     }
+
+    // //Create api call to save the votes in a database
+    // private async Task SaveVotes()
+    // {
+    //     //Save the votes in the database
+    //     await _contestantService.SaveVotes(contestants);
+    // }
+
+    // //Create contestantService and SaveVotes method. Injected in the constructor
+    // private ContestantService _contestantService;
+
+    
 
     private void ClearVotesForIndex(int contestantId)
     {
