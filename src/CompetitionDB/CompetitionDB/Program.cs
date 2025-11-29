@@ -1,5 +1,6 @@
 using CompetitionDB.Client.Pages;
 using CompetitionDB.Components;
+using CompetitionDB.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,12 @@ builder.AddServiceDefaults();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
+
+// Add API controllers
+builder.Services.AddControllers();
+
+// Add competition result service (in-memory storage)
+builder.Services.AddSingleton<ICompetitionResultService, InMemoryCompetitionResultService>();
 
 var app = builder.Build();
 
@@ -29,6 +36,9 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+// Map API controllers
+app.MapControllers();
 
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()

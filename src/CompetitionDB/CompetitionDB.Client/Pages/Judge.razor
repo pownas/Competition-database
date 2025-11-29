@@ -1,5 +1,7 @@
 ﻿@page "/judge"
 @using CompetitionDB.Client.Models
+@using System.Net.Http.Json
+@inject HttpClient Http
 
 <PageTitle>Competition - Judgement</PageTitle>
 
@@ -10,6 +12,13 @@
     You can maximum set @(contestants.Count/3 /* number of contestants divided by 3  */) Yes votes, 
     and then you have to set Alt 1, Alt 2 or Alt 3.
 </p>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert @statusAlertClass" role="alert">
+        @statusMessage
+    </div>
+}
 
 <table>
     <thead>
@@ -48,7 +57,16 @@
         }
         <tr>
             <td>
-                <button class="btn btn-primary">Save Votes</button>
+                <button class="btn btn-primary" @onclick="SaveVotes" disabled="@isSaving">
+                    @if (isSaving)
+                    {
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Votes</span>
+                    }
+                </button>
             </td>
             <td>@contestants.Count(a => a.Scored == 10) of @(contestants.Count / 3)</td>
             <td>@contestants.Count(a => a.Scored == 4.5) of 1</td>
@@ -71,6 +89,16 @@
 
     //Make a list of Contestants and their votes
     private List<Contestant> contestants = new List<Contestant>();
+
+    // API status tracking
+    private bool isSaving = false;
+    private bool hasSubmittedResults = false;
+    private string statusMessage = string.Empty;
+    private string statusAlertClass = "alert-info";
+
+    // Competition and Judge IDs (would come from authentication/context in production)
+    private int competitionId = 1;
+    private int judgeId = 1;
 
     enum Vote
     {
@@ -138,21 +166,92 @@
 
         Console.WriteLine($"Contestant {contestantId} voted {judgeVoted}");
         Console.WriteLine($"Contestant {contestantId} scored {contestants[index].Scored}");
-
-        //SaveVotes();
     }
 
-    // //Create api call to save the votes in a database
-    // private async Task SaveVotes()
-    // {
-    //     //Save the votes in the database
-    //     await _contestantService.SaveVotes(contestants);
-    // }
+    /// <summary>
+    /// Save votes by calling the backend API.
+    /// Uses POST for first submission, PUT for updates.
+    /// </summary>
+    private async Task SaveVotes()
+    {
+        // Validate all contestants have been scored
+        if (contestants.Any(c => c.Scored == -1))
+        {
+            statusMessage = "Please score all contestants before saving.";
+            statusAlertClass = "alert-warning";
+            return;
+        }
 
-    // //Create contestantService and SaveVotes method. Injected in the constructor
-    // private ContestantService _contestantService;
+        isSaving = true;
+        statusMessage = string.Empty;
 
-    
+        try
+        {
+            var dto = new CompetitionResultDto
+            {
+                CompetitionId = competitionId,
+                JudgeId = judgeId,
+                Results = contestants.Select(c => new ContestantScoreDto
+                {
+                    ContestantId = c.Id,
+                    Name = c.Name,
+                    Score = c.Scored
+                }).ToList()
+            };
+
+            HttpResponseMessage response;
+
+            if (hasSubmittedResults)
+            {
+                // Update existing results with PUT
+                response = await Http.PutAsJsonAsync("api/competitionresults", dto);
+            }
+            else
+            {
+                // Submit new results with POST
+                response = await Http.PostAsJsonAsync("api/competitionresults", dto);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                hasSubmittedResults = true;
+                statusMessage = "✅ Votes saved successfully!";
+                statusAlertClass = "alert-success";
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                // Results already exist, try PUT instead
+                hasSubmittedResults = true;
+                response = await Http.PutAsJsonAsync("api/competitionresults", dto);
+                if (response.IsSuccessStatusCode)
+                {
+                    statusMessage = "✅ Votes updated successfully!";
+                    statusAlertClass = "alert-success";
+                }
+                else
+                {
+                    statusMessage = $"❌ Failed to update votes: {response.ReasonPhrase}";
+                    statusAlertClass = "alert-danger";
+                }
+            }
+            else
+            {
+                statusMessage = $"❌ Failed to save votes: {response.ReasonPhrase}";
+                statusAlertClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"❌ Error saving votes: {ex.Message}";
+            statusAlertClass = "alert-danger";
+            Console.WriteLine($"Error saving votes: {ex}");
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
 
     private void ClearVotesForIndex(int contestantId)
     {
