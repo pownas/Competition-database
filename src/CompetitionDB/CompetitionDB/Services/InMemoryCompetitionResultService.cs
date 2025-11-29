@@ -9,11 +9,14 @@ using CompetitionDB.Models;
 /// </summary>
 public class InMemoryCompetitionResultService : ICompetitionResultService
 {
-    private readonly ConcurrentDictionary<string, List<ContestantResult>> _storage = new();
+    private readonly ConcurrentDictionary<(int CompetitionId, int JudgeId), List<ContestantResult>> _storage = new();
     private int _nextId = 1;
     private readonly object _idLock = new();
 
-    private static string GetKey(int competitionId, int judgeId) => $"{competitionId}_{judgeId}";
+    /// <summary>
+    /// Valid score values for competition results.
+    /// </summary>
+    private static readonly double[] ValidScores = [0.0, 4.2, 4.3, 4.5, 10.0];
 
     /// <inheritdoc />
     public Task<List<ContestantResult>> SaveResultsAsync(CompetitionResultDto dto)
@@ -39,7 +42,7 @@ public class InMemoryCompetitionResultService : ICompetitionResultService
             };
         }).ToList();
 
-        var key = GetKey(dto.CompetitionId, dto.JudgeId);
+        var key = (dto.CompetitionId, dto.JudgeId);
 
         if (_storage.ContainsKey(key))
         {
@@ -56,7 +59,7 @@ public class InMemoryCompetitionResultService : ICompetitionResultService
     {
         ValidateDto(dto);
 
-        var key = GetKey(dto.CompetitionId, dto.JudgeId);
+        var key = (dto.CompetitionId, dto.JudgeId);
 
         if (!_storage.TryGetValue(key, out var existingResults))
         {
@@ -76,7 +79,7 @@ public class InMemoryCompetitionResultService : ICompetitionResultService
                 Score = r.Score,
                 CompetitionId = dto.CompetitionId,
                 JudgeId = dto.JudgeId,
-                SubmittedAt = DateTime.UtcNow
+                SubmittedAt = existing?.SubmittedAt ?? DateTime.UtcNow
             };
         }).ToList();
 
@@ -88,7 +91,7 @@ public class InMemoryCompetitionResultService : ICompetitionResultService
     public Task<List<ContestantResult>> GetResultsByCompetitionAsync(int competitionId)
     {
         var results = _storage
-            .Where(kvp => kvp.Key.StartsWith($"{competitionId}_"))
+            .Where(kvp => kvp.Key.CompetitionId == competitionId)
             .SelectMany(kvp => kvp.Value)
             .ToList();
 
@@ -98,7 +101,7 @@ public class InMemoryCompetitionResultService : ICompetitionResultService
     /// <inheritdoc />
     public Task<List<ContestantResult>> GetResultsByJudgeAsync(int competitionId, int judgeId)
     {
-        var key = GetKey(competitionId, judgeId);
+        var key = (competitionId, judgeId);
         if (_storage.TryGetValue(key, out var results))
         {
             return Task.FromResult(results);
@@ -136,7 +139,6 @@ public class InMemoryCompetitionResultService : ICompetitionResultService
             throw new ArgumentException("At least one result is required", nameof(dto));
         }
 
-        var validScores = new[] { 0.0, 4.2, 4.3, 4.5, 10.0 };
         foreach (var result in dto.Results)
         {
             if (result.ContestantId <= 0)
@@ -144,7 +146,7 @@ public class InMemoryCompetitionResultService : ICompetitionResultService
                 throw new ArgumentException($"ContestantId must be greater than 0", nameof(dto));
             }
 
-            if (!validScores.Contains(result.Score))
+            if (!ValidScores.Contains(result.Score))
             {
                 throw new ArgumentException(
                     $"Invalid score {result.Score} for contestant {result.ContestantId}. Valid scores are: 0 (No), 4.2 (Alt3), 4.3 (Alt2), 4.5 (Alt1), 10 (Yes)",
